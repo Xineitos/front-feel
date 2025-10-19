@@ -1,381 +1,589 @@
-import React, { useState, useRef } from 'react';
-import { View, Text, Image, TouchableOpacity, Modal, ScrollView } from 'react-native';
-import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
+import React, { useEffect, useState, useRef } from 'react';
+import { StyleSheet, View, Text, TouchableOpacity, Platform, ActivityIndicator, Alert, Image, useColorScheme } from 'react-native';
+import MapView, { Marker, PROVIDER_GOOGLE, MapStyleElement } from 'react-native-maps';
+import * as Location from 'expo-location';
 import { StatusBar } from 'expo-status-bar';
+import { Ionicons } from '@expo/vector-icons';
 import WaveHeader from '../../components/WaveHeader';
 
-interface AlertMarker {
-  id: string;
-  type: 'community' | 'parish' | 'urgency' | 'panic' | 'criminal';
-  title: string;
-  message: string;
-  location: string;
-  coordinates: {
-    latitude: number;
-    longitude: number;
-  };
-  urgencyLevel: 'low' | 'medium' | 'high' | 'critical';
-  createdBy: string;
-  timestamp: string;
-}
-
-type AlertType = 'all' | 'community' | 'parish' | 'urgency' | 'panic' | 'criminal';
-
 export default function MapScreen() {
-  const mapRef = useRef<MapView>(null);
-  const [selectedAlert, setSelectedAlert] = useState<AlertMarker | null>(null);
-  const [modalVisible, setModalVisible] = useState(false);
-  const [activeFilter, setActiveFilter] = useState<AlertType>('all');
+  const colorScheme = useColorScheme();
+  const [region, setRegion] = useState(null);
+  const [errorMsg, setErrorMsg] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isDarkMode, setIsDarkMode] = useState(colorScheme === 'dark');
+  const [permissionDenied, setPermissionDenied] = useState(false);
+  const [mapType, setMapType] = useState('standard'); // 'standard' or 'satellite'
+  const mapRef = useRef(null);
 
-  // Mock alert data with coordinates
-  const [alerts] = useState<AlertMarker[]>([
+  // Dark mode map style
+  const darkMapStyle: MapStyleElement[] = [
     {
-      id: '1',
-      type: 'panic',
-      title: 'Emergency Assistance Needed',
-      message: 'Medical emergency at community center',
-      location: 'Community Center, Downtown',
-      coordinates: { latitude: 18.0179, longitude: -76.8099 }, // Kingston, Jamaica (example)
-      urgencyLevel: 'critical',
-      createdBy: 'John Doe',
-      timestamp: new Date(Date.now() - 300000).toISOString(),
+      "elementType": "geometry",
+      "stylers": [{"color": "#212121"}]
     },
     {
-      id: '2',
-      type: 'criminal',
-      title: 'Suspicious Activity Reported',
-      message: 'Unknown person lurking near school',
-      location: 'Elementary School, North District',
-      coordinates: { latitude: 18.0199, longitude: -76.8079 },
-      urgencyLevel: 'high',
-      createdBy: 'Jane Smith',
-      timestamp: new Date(Date.now() - 600000).toISOString(),
+      "elementType": "labels.icon",
+      "stylers": [{"visibility": "off"}]
     },
     {
-      id: '3',
-      type: 'community',
-      title: 'Road Closure Notice',
-      message: 'Main Street closed for repairs',
-      location: 'Main Street & 5th Avenue',
-      coordinates: { latitude: 18.0159, longitude: -76.8119 },
-      urgencyLevel: 'medium',
-      createdBy: 'Mike Johnson',
-      timestamp: new Date(Date.now() - 900000).toISOString(),
+      "elementType": "labels.text.fill",
+      "stylers": [{"color": "#757575"}]
     },
     {
-      id: '4',
-      type: 'urgency',
-      title: 'Power Outage Alert',
-      message: 'Widespread power outage affecting multiple streets',
-      location: 'West Side District',
-      coordinates: { latitude: 18.0189, longitude: -76.8139 },
-      urgencyLevel: 'high',
-      createdBy: 'Sarah Williams',
-      timestamp: new Date(Date.now() - 1200000).toISOString(),
+      "elementType": "labels.text.stroke",
+      "stylers": [{"color": "#212121"}]
     },
-  ]);
+    {
+      "featureType": "administrative",
+      "elementType": "geometry",
+      "stylers": [{"color": "#757575"}]
+    },
+    {
+      "featureType": "administrative.country",
+      "elementType": "labels.text.fill",
+      "stylers": [{"color": "#9e9e9e"}]
+    },
+    {
+      "featureType": "administrative.locality",
+      "elementType": "labels.text.fill",
+      "stylers": [{"color": "#bdbdbd"}]
+    },
+    {
+      "featureType": "poi",
+      "elementType": "labels.text.fill",
+      "stylers": [{"color": "#757575"}]
+    },
+    {
+      "featureType": "poi.park",
+      "elementType": "geometry",
+      "stylers": [{"color": "#181818"}]
+    },
+    {
+      "featureType": "poi.park",
+      "elementType": "labels.text.fill",
+      "stylers": [{"color": "#616161"}]
+    },
+    {
+      "featureType": "poi.park",
+      "elementType": "labels.text.stroke",
+      "stylers": [{"color": "#1b1b1b"}]
+    },
+    {
+      "featureType": "road",
+      "elementType": "geometry.fill",
+      "stylers": [{"color": "#2c2c2c"}]
+    },
+    {
+      "featureType": "road",
+      "elementType": "labels.text.fill",
+      "stylers": [{"color": "#8a8a8a"}]
+    },
+    {
+      "featureType": "road.arterial",
+      "elementType": "geometry",
+      "stylers": [{"color": "#373737"}]
+    },
+    {
+      "featureType": "road.highway",
+      "elementType": "geometry",
+      "stylers": [{"color": "#3c3c3c"}]
+    },
+    {
+      "featureType": "road.highway.controlled_access",
+      "elementType": "geometry",
+      "stylers": [{"color": "#4e4e4e"}]
+    },
+    {
+      "featureType": "road.local",
+      "elementType": "labels.text.fill",
+      "stylers": [{"color": "#616161"}]
+    },
+    {
+      "featureType": "transit",
+      "elementType": "labels.text.fill",
+      "stylers": [{"color": "#757575"}]
+    },
+    {
+      "featureType": "water",
+      "elementType": "geometry",
+      "stylers": [{"color": "#000000"}]
+    },
+    {
+      "featureType": "water",
+      "elementType": "labels.text.fill",
+      "stylers": [{"color": "#3d3d3d"}]
+    }
+  ];
 
-  const handleMarkerPress = (alert: AlertMarker) => {
-    setSelectedAlert(alert);
-    setModalVisible(true);
-  };
+  // Light mode map style
+  const lightMapStyle: MapStyleElement[] = [
+    {
+      "elementType": "geometry",
+      "stylers": [{"color": "#f5f5f5"}]
+    },
+    {
+      "elementType": "labels.icon",
+      "stylers": [{"visibility": "on"}]
+    },
+    {
+      "elementType": "labels.text.fill",
+      "stylers": [{"color": "#616161"}]
+    },
+    {
+      "featureType": "poi",
+      "elementType": "labels.text",
+      "stylers": [{"visibility": "off"}]
+    },
+    {
+      "featureType": "poi.business",
+      "stylers": [{"visibility": "off"}]
+    },
+    {
+      "featureType": "road",
+      "elementType": "geometry",
+      "stylers": [{"color": "#ffffff"}]
+    },
+    {
+      "featureType": "road.highway",
+      "elementType": "geometry",
+      "stylers": [{"color": "#dadada"}]
+    },
+    {
+      "featureType": "water",
+      "elementType": "geometry",
+      "stylers": [{"color": "#c9c9c9"}]
+    },
+    {
+      "featureType": "water",
+      "elementType": "labels.text.fill",
+      "stylers": [{"color": "#9e9e9e"}]
+    }
+  ];
 
-  const handleRefresh = () => {
-    console.log('Refreshing map...');
-    // Re-center map to user's location or reload alerts
-    if (mapRef.current) {
-      mapRef.current.animateToRegion({
+  const requestLocationPermission = async () => {
+    setIsLoading(true);
+    setErrorMsg(null);
+    setPermissionDenied(false);
+
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+
+      if (status !== 'granted') {
+        setPermissionDenied(true);
+        setErrorMsg('Permission to access location was denied');
+        setIsLoading(false);
+
+        // Set default region to Kingston, Jamaica
+        setRegion({
+          latitude: 18.0179,
+          longitude: -76.8099,
+          latitudeDelta: 0.05,
+          longitudeDelta: 0.05,
+        });
+
+        return;
+      }
+
+      // Get current position
+      getLocation();
+    } catch (error) {
+      console.error('Error requesting permission:', error);
+      setErrorMsg('Error requesting location permissions');
+      setIsLoading(false);
+
+      // Set default region to Kingston, Jamaica
+      setRegion({
         latitude: 18.0179,
         longitude: -76.8099,
-        latitudeDelta: 0.01,
-        longitudeDelta: 0.01,
+        latitudeDelta: 0.05,
+        longitudeDelta: 0.05,
       });
     }
   };
 
-  const getFilteredAlerts = () => {
-    if (activeFilter === 'all') return alerts;
-    return alerts.filter(alert => alert.type === activeFilter);
-  };
+  const getLocation = async () => {
+    try {
+      // Show loading indicator
+      setIsLoading(true);
 
-  const getMarkerColor = (urgencyLevel: string) => {
-    switch (urgencyLevel) {
-      case 'critical': return '#D50A0A'; // Red
-      case 'high': return '#FF7900'; // Orange
-      case 'medium': return '#005d9e'; // Blue
-      default: return '#b1babf'; // Gray
+      // Get current position
+      const location = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced
+      });
+
+      // Update region with user's location
+      const newRegion = {
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude,
+        latitudeDelta: 0.01,
+        longitudeDelta: 0.01,
+      };
+
+      setRegion(newRegion);
+      setIsLoading(false);
+
+      // Center map on user's location if available
+      if (mapRef.current) {
+        mapRef.current.animateToRegion(newRegion, 500);
+      }
+    } catch (error) {
+      console.error('Error getting location:', error);
+      setErrorMsg('Could not get your location');
+      setIsLoading(false);
+
+      // Set default region to Kingston, Jamaica
+      setRegion({
+        latitude: 18.0179,
+        longitude: -76.8099,
+        latitudeDelta: 0.05,
+        longitudeDelta: 0.05,
+      });
     }
   };
 
-  const getAlertIcon = (type: string) => {
-    switch (type) {
-      case 'panic': return '🚨';
-      case 'criminal': return '⚠️';
-      case 'urgency': return '❗';
-      case 'community': return '🏘️';
-      case 'parish': return '📍';
-      default: return '🔔';
+  useEffect(() => {
+    requestLocationPermission();
+  }, []);
+
+  const recenterMap = () => {
+    if (region && mapRef.current) {
+      mapRef.current.animateToRegion(region, 500);
     }
   };
 
-  const getTimeAgo = (timestamp: string) => {
-    const seconds = Math.floor((Date.now() - new Date(timestamp).getTime()) / 1000);
-    if (seconds < 60) return `${seconds}s ago`;
-    if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
-    if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
-    return `${Math.floor(seconds / 86400)}d ago`;
+  const toggleMapStyle = () => {
+    setIsDarkMode(prev => !prev);
+  };
+
+  const toggleMapType = () => {
+    setMapType(prev => prev === 'standard' ? 'satellite' : 'standard');
+  };
+
+  // Define example points of interest
+  const pointsOfInterest = [
+    {
+      id: '1',
+      coordinate: { latitude: 18.0179, longitude: -76.8099 },
+      title: 'Kingston',
+      description: 'Capital of Jamaica'
+    },
+    {
+      id: '2',
+      coordinate: { latitude: region?.latitude ? region.latitude + 0.01 : 18.0279,
+                    longitude: region?.longitude ? region.longitude + 0.01 : -76.7999 },
+      title: 'Safety Point',
+      description: 'Community Safe Zone'
+    },
+    {
+      id: '3',
+      coordinate: { latitude: region?.latitude ? region.latitude - 0.008 : 18.0099,
+                    longitude: region?.longitude ? region.longitude - 0.005 : -76.8149 },
+      title: 'Emergency Station',
+      description: 'Police and Medical Assistance'
+    }
+  ];
+
+  // Create custom marker images for different modes
+  const getMarkerColor = (type) => {
+    // If in satellite mode, use more visible colors
+    if (mapType === 'satellite') {
+      return '#ffffff';  // White markers stand out better on satellite imagery
+    }
+    // Otherwise use theme-based colors
+    return isDarkMode ? '#4fc3f7' : '#005d9e';
   };
 
   return (
-    <View className="flex-1 bg-primary">
-      <StatusBar style="dark" />
+    <View style={[styles.container, isDarkMode && styles.darkContainer]}>
+      <StatusBar style={isDarkMode ? "light" : "dark"} />
 
       {/* Wave Header */}
       <WaveHeader />
 
-      {/* Top Header with Logo and Refresh */}
-      <View className="px-6 pt-16 pb-2 flex-row items-center justify-between" style={{ zIndex: 10 }}>
-        {/* Refresh Button */}
-        <TouchableOpacity
-          className="w-10 h-10 items-center justify-center bg-tertiary rounded-full"
-          onPress={handleRefresh}
-        >
-          <Text className="text-xl text-accent">🔄</Text>
-        </TouchableOpacity>
-
-        {/* Logo */}
-        <Image
-          source={require('../../assets/images/FeelSafeLogo.png')}
-          className="w-16 h-16"
-          resizeMode="contain"
-        />
-
-        {/* Placeholder for alignment */}
-        <View className="w-10 h-10" />
-      </View>
-
-      {/* Filter Buttons */}
-      <View className="px-4 pb-3">
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          <TouchableOpacity
-            className={`px-4 py-2 rounded-full mr-2 ${
-              activeFilter === 'all' ? 'bg-tertiary' : 'bg-accent border border-light-100'
-            }`}
-            onPress={() => setActiveFilter('all')}
-          >
-            <Text className={`text-sm font-semibold ${
-              activeFilter === 'all' ? 'text-accent' : 'text-dark-200'
-            }`}>
-              All
+      {/* Map container */}
+      <View style={styles.mapContainer}>
+        {isLoading && !region && (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#005d9e" />
+            <Text style={[styles.loadingText, isDarkMode && styles.darkText]}>
+              Getting your location...
             </Text>
-          </TouchableOpacity>
+          </View>
+        )}
 
-          <TouchableOpacity
-            className={`px-4 py-2 rounded-full mr-2 ${
-              activeFilter === 'community' ? 'bg-tertiary' : 'bg-accent border border-light-100'
-            }`}
-            onPress={() => setActiveFilter('community')}
-          >
-            <Text className={`text-sm font-semibold ${
-              activeFilter === 'community' ? 'text-accent' : 'text-dark-200'
-            }`}>
-              🏘️ Community
+        {permissionDenied && (
+          <View style={styles.permissionContainer}>
+            <Image
+              source={require('../../assets/images/FeelSafeLogo.png')}
+              style={styles.permissionImage}
+              resizeMode="contain"
+            />
+            <Text style={[styles.permissionTitle, isDarkMode && styles.darkText]}>
+              Location Permission Required
             </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            className={`px-4 py-2 rounded-full mr-2 ${
-              activeFilter === 'parish' ? 'bg-tertiary' : 'bg-accent border border-light-100'
-            }`}
-            onPress={() => setActiveFilter('parish')}
-          >
-            <Text className={`text-sm font-semibold ${
-              activeFilter === 'parish' ? 'text-accent' : 'text-dark-200'
-            }`}>
-              📍 Parish
+            <Text style={[styles.permissionText, isDarkMode && styles.darkText]}>
+              FeelSafe needs your location to show nearby alerts and provide accurate safety information.
             </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            className={`px-4 py-2 rounded-full mr-2 ${
-              activeFilter === 'urgency' ? 'bg-tertiary' : 'bg-accent border border-light-100'
-            }`}
-            onPress={() => setActiveFilter('urgency')}
-          >
-            <Text className={`text-sm font-semibold ${
-              activeFilter === 'urgency' ? 'text-accent' : 'text-dark-200'
-            }`}>
-              ❗ Urgent
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            className={`px-4 py-2 rounded-full mr-2 ${
-              activeFilter === 'panic' ? 'bg-tertiary' : 'bg-accent border border-light-100'
-            }`}
-            onPress={() => setActiveFilter('panic')}
-          >
-            <Text className={`text-sm font-semibold ${
-              activeFilter === 'panic' ? 'text-accent' : 'text-dark-200'
-            }`}>
-              🚨 Panic
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            className={`px-4 py-2 rounded-full ${
-              activeFilter === 'criminal' ? 'bg-tertiary' : 'bg-accent border border-light-100'
-            }`}
-            onPress={() => setActiveFilter('criminal')}
-          >
-            <Text className={`text-sm font-semibold ${
-              activeFilter === 'criminal' ? 'text-accent' : 'text-dark-200'
-            }`}>
-              ⚠️ Criminal
-            </Text>
-          </TouchableOpacity>
-        </ScrollView>
-      </View>
-
-      {/* Map View */}
-      <View className="flex-1">
-        <MapView
-          ref={mapRef}
-          provider={PROVIDER_GOOGLE}
-          className="flex-1"
-          initialRegion={{
-            latitude: 18.0179,
-            longitude: -76.8099,
-            latitudeDelta: 0.02,
-            longitudeDelta: 0.02,
-          }}
-          showsUserLocation
-          showsMyLocationButton
-        >
-          {getFilteredAlerts().map((alert) => (
-            <Marker
-              key={alert.id}
-              coordinate={alert.coordinates}
-              onPress={() => handleMarkerPress(alert)}
-              pinColor={getMarkerColor(alert.urgencyLevel)}
+            <TouchableOpacity
+              style={styles.permissionButton}
+              onPress={requestLocationPermission}
             >
-              <View className="items-center">
-                <View
-                  style={{
-                    backgroundColor: getMarkerColor(alert.urgencyLevel),
-                    padding: 8,
-                    borderRadius: 20,
-                    borderWidth: 2,
-                    borderColor: '#FFFFFF',
-                  }}
-                >
-                  <Text className="text-xl">{getAlertIcon(alert.type)}</Text>
-                </View>
-              </View>
-            </Marker>
-          ))}
-        </MapView>
-      </View>
+              <Text style={styles.permissionButtonText}>Allow Location Access</Text>
+            </TouchableOpacity>
+          </View>
+        )}
 
-      {/* Alert Detail Modal */}
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={modalVisible}
-        onRequestClose={() => setModalVisible(false)}
-      >
-        <View className="flex-1 justify-end bg-black/50">
-          <View className="bg-accent rounded-t-3xl p-6 shadow-lg">
-            {selectedAlert && (
-              <>
-                {/* Modal Header */}
-                <View className="flex-row justify-between items-start mb-4">
-                  <View className="flex-1 mr-4">
-                    <View className="flex-row items-center mb-2">
-                      <Text className="text-3xl mr-2">{getAlertIcon(selectedAlert.type)}</Text>
-                      <Text className="text-2xl font-bold text-dark-100 flex-1">
-                        {selectedAlert.title}
-                      </Text>
-                    </View>
-                    <View
-                      className="self-start px-3 py-1 rounded-full"
-                      style={{ backgroundColor: getMarkerColor(selectedAlert.urgencyLevel) }}
-                    >
-                      <Text className="text-xs font-bold text-accent capitalize">
-                        {selectedAlert.urgencyLevel} Urgency
-                      </Text>
-                    </View>
-                  </View>
+        {region && (
+          <MapView
+            ref={mapRef}
+            provider={PROVIDER_GOOGLE}
+            style={styles.map}
+            initialRegion={region}
+            showsUserLocation={true}
+            showsMyLocationButton={false}
+            showsCompass={true}
+            showsScale={true}
+            mapType={mapType}
+            customMapStyle={mapType === 'standard' ? (isDarkMode ? darkMapStyle : lightMapStyle) : []}
+          >
+            {/* Points of interest markers */}
+            {pointsOfInterest.map(point => (
+              <Marker
+                key={point.id}
+                coordinate={point.coordinate}
+                title={point.title}
+                description={point.description}
+                pinColor={getMarkerColor(point.id)}
+              />
+            ))}
+          </MapView>
+        )}
 
-                  <TouchableOpacity
-                    className="w-8 h-8 rounded-full bg-primary items-center justify-center"
-                    onPress={() => setModalVisible(false)}
-                  >
-                    <Text className="text-xl text-dark-100">×</Text>
-                  </TouchableOpacity>
-                </View>
+        {/* UI Controls */}
+        {region && (
+          <View style={styles.controls}>
+            {/* Recenter button */}
+            <TouchableOpacity
+              style={[styles.controlButton, isDarkMode && styles.darkControlButton]}
+              onPress={recenterMap}
+            >
+              <Ionicons name="locate" size={24} color={isDarkMode ? "#fff" : "#005d9e"} />
+            </TouchableOpacity>
 
-                {/* Alert Details */}
-                <View className="mb-4">
-                  <Text className="text-base text-dark-200 mb-4">
-                    {selectedAlert.message}
-                  </Text>
+            {/* Toggle satellite view button */}
+            <TouchableOpacity
+              style={[styles.controlButton, isDarkMode && styles.darkControlButton]}
+              onPress={toggleMapType}
+            >
+              <Ionicons
+                name={mapType === 'standard' ? "earth" : "map"}
+                size={24}
+                color={isDarkMode ? "#fff" : "#005d9e"}
+              />
+              <View style={mapType === 'satellite' ? styles.activeDot : styles.inactiveDot} />
+            </TouchableOpacity>
 
-                  {/* Location */}
-                  <View className="flex-row items-center mb-3">
-                    <Text className="text-base mr-2">📍</Text>
-                    <Text className="text-sm text-dark-200 flex-1">
-                      <Text className="font-semibold">Location: </Text>
-                      {selectedAlert.location}
-                    </Text>
-                  </View>
-
-                  {/* User */}
-                  <View className="flex-row items-center mb-3">
-                    <Text className="text-base mr-2">👤</Text>
-                    <Text className="text-sm text-dark-200">
-                      <Text className="font-semibold">Created by: </Text>
-                      {selectedAlert.createdBy}
-                    </Text>
-                  </View>
-
-                  {/* Time */}
-                  <View className="flex-row items-center">
-                    <Text className="text-base mr-2">🕐</Text>
-                    <Text className="text-sm text-dark-200">
-                      <Text className="font-semibold">Time: </Text>
-                      {getTimeAgo(selectedAlert.timestamp)} • {new Date(selectedAlert.timestamp).toLocaleString()}
-                    </Text>
-                  </View>
-                </View>
-
-                {/* Action Buttons */}
-                <View className="flex-row gap-3">
-                  <TouchableOpacity
-                    className="flex-1 bg-tertiary rounded-xl py-3 items-center"
-                    onPress={() => {
-                      console.log('Get directions to:', selectedAlert.location);
-                      setModalVisible(false);
-                    }}
-                  >
-                    <Text className="text-accent font-bold">Get Directions</Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    className="flex-1 bg-primary border border-tertiary rounded-xl py-3 items-center"
-                    onPress={() => {
-                      console.log('View details for:', selectedAlert.id);
-                      setModalVisible(false);
-                    }}
-                  >
-                    <Text className="text-tertiary font-bold">View Details</Text>
-                  </TouchableOpacity>
-                </View>
-              </>
+            {/* Toggle map style button (only for standard view) */}
+            {mapType === 'standard' && (
+              <TouchableOpacity
+                style={[styles.controlButton, isDarkMode && styles.darkControlButton]}
+                onPress={toggleMapStyle}
+              >
+                <Ionicons name={isDarkMode ? "sunny" : "moon"} size={24} color={isDarkMode ? "#fff" : "#005d9e"} />
+              </TouchableOpacity>
             )}
           </View>
-        </View>
-      </Modal>
+        )}
+
+        {/* Map type indicator */}
+        {region && (
+          <View style={[
+            styles.mapTypeIndicator,
+            isDarkMode && styles.darkMapTypeIndicator,
+            mapType === 'satellite' && styles.satelliteMapTypeIndicator
+          ]}>
+            <Text style={[
+              styles.mapTypeText,
+              isDarkMode && styles.darkMapTypeText,
+              mapType === 'satellite' && styles.satelliteMapTypeText
+            ]}>
+              {mapType === 'standard' ? 'Standard View' : 'Satellite View'}
+            </Text>
+          </View>
+        )}
+
+        {/* Error message */}
+        {errorMsg && !permissionDenied && (
+          <View style={styles.errorContainer}>
+            <Text style={styles.errorText}>{errorMsg}</Text>
+            <TouchableOpacity
+              style={styles.errorButton}
+              onPress={requestLocationPermission}
+            >
+              <Text style={styles.errorButtonText}>Try Again</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+      </View>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#ffffff',
+  },
+  darkContainer: {
+    backgroundColor: '#121212',
+  },
+  mapContainer: {
+    flex: 1,
+    position: 'relative',
+  },
+  map: {
+    flex: 1,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#ffffff',
+  },
+  loadingText: {
+    fontSize: 16,
+    color: '#666',
+    marginTop: 16,
+  },
+  darkText: {
+    color: '#e0e0e0',
+  },
+  controls: {
+    position: 'absolute',
+    right: 16,
+    bottom: 16,
+    gap: 8,
+  },
+  controlButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#ffffff',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 5,
+    marginBottom: 8,
+  },
+  darkControlButton: {
+    backgroundColor: '#333333',
+  },
+  activeDot: {
+    position: 'absolute',
+    bottom: 4,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#005d9e',
+  },
+  inactiveDot: {
+    position: 'absolute',
+    bottom: 4,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: 'transparent',
+  },
+  mapTypeIndicator: {
+    position: 'absolute',
+    top: 16,
+    left: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 4,
+  },
+  darkMapTypeIndicator: {
+    backgroundColor: 'rgba(50, 50, 50, 0.8)',
+  },
+  satelliteMapTypeIndicator: {
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+  },
+  mapTypeText: {
+    fontSize: 12,
+    color: '#005d9e',
+    fontWeight: '500',
+  },
+  darkMapTypeText: {
+    color: '#4fc3f7',
+  },
+  satelliteMapTypeText: {
+    color: '#ffffff',
+  },
+  permissionContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+    backgroundColor: '#ffffff',
+  },
+  permissionImage: {
+    width: 120,
+    height: 120,
+    marginBottom: 24,
+  },
+  permissionTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  permissionText: {
+    fontSize: 16,
+    textAlign: 'center',
+    marginBottom: 24,
+    color: '#666',
+  },
+  permissionButton: {
+    backgroundColor: '#005d9e',
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+  },
+  permissionButtonText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  errorContainer: {
+    position: 'absolute',
+    bottom: 80,
+    left: 16,
+    right: 16,
+    backgroundColor: 'rgba(255, 59, 48, 0.9)',
+    padding: 16,
+    borderRadius: 8,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  errorText: {
+    color: 'white',
+    flex: 1,
+  },
+  errorButton: {
+    backgroundColor: '#ffffff',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 4,
+    marginLeft: 8,
+  },
+  errorButtonText: {
+    color: '#ff3b30',
+    fontWeight: 'bold',
+  },
+});
