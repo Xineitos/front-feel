@@ -7,7 +7,7 @@ import { websocketService, AlertMessage } from '../../services/websocket.service
 import { useTheme } from '../../contexts/ThemeContext';
 
 type AlertFilter = 'active' | 'closed' | 'responded' | 'myAlerts';
-type QuickAccessType = 'community' | 'police' | 'fire' | 'ambulance';
+type QuickAccessType = 'community' | 'police' | 'fire' | 'ambulance' | 'stats';
 
 interface AlertWithDistance extends AlertMessage {
   distance?: number; // in kilometers
@@ -89,9 +89,63 @@ export default function HomeScreen() {
   }, []);
 
   const handleQuickAccess = (type: QuickAccessType) => {
+    if (type === 'stats') {
+      router.push('/community-stats');
+      return;
+    }
     console.log('Quick access:', type);
     // Navigate to specific alert creation or view
   };
+
+  // Add this helper function for button styling
+  const getQuickAccessStyle = (type: QuickAccessType) => {
+    const baseStyle = `${darkMode ? 'bg-dark-200' : 'bg-accent'} p-4 rounded-xl flex-1 mx-1 items-center justify-center`;
+    return baseStyle;
+  };
+
+  const renderQuickAccessButtons = () => (
+    <View className="flex-row justify-between mb-6">
+      <TouchableOpacity
+        className={getQuickAccessStyle('stats')}
+        onPress={() => handleQuickAccess('stats')}
+      >
+        <Image
+          source={require('../../assets/images/people.png')}
+          className="w-8 h-8 mb-2"
+          resizeMode="contain"
+        />
+        <Text className={`text-xs text-center ${darkMode ? 'text-accent' : 'text-dark-100'}`}>
+          Community Stats
+        </Text>
+      </TouchableOpacity>
+      <TouchableOpacity
+        className={getQuickAccessStyle('police')}
+        onPress={() => handleQuickAccess('police')}
+      >
+        <Image
+          source={require('../../assets/images/police-badge.png')}
+          className="w-8 h-8 mb-2"
+          resizeMode="contain"
+        />
+        <Text className={`text-xs text-center ${darkMode ? 'text-accent' : 'text-dark-100'}`}>
+          Police
+        </Text>
+      </TouchableOpacity>
+      <TouchableOpacity
+        className={getQuickAccessStyle('ambulance')}
+        onPress={() => handleQuickAccess('ambulance')}
+      >
+        <Image
+          source={require('../../assets/images/ambulance.png')}
+          className="w-8 h-8 mb-2"
+          resizeMode="contain"
+        />
+        <Text className={`text-xs text-center ${darkMode ? 'text-accent' : 'text-dark-100'}`}>
+          Medical
+        </Text>
+      </TouchableOpacity>
+    </View>
+  );
 
   const getFilteredAlerts = () => {
     let filtered = alerts;
@@ -293,27 +347,48 @@ export default function HomeScreen() {
             elevation: 3,
           }}
         >
-          {/* Single Create Alert Button */}
-          <TouchableOpacity
-            className="rounded-xl py-5 items-center flex-row justify-center"
-            style={{
-              borderWidth: 3,
-              borderColor: '#D50A0A',
-              backgroundColor: 'transparent',
-            }}
-            onPress={() => router.push('/create-alert')}
-            activeOpacity={0.8}
-          >
-            <Image
-              source={require('../../assets/images/warning.png')}
-              style={{ width: 50, height: 50, marginRight: 12 }}
-              resizeMode="contain"
-            />
-            <Text
-              className="text-3xl font-bold"
-              style={{ color: darkMode ? '#FFFFFF' : '#000000' }}
-            >Create Alert</Text>
-          </TouchableOpacity>
+          {/* Buttons Row */}
+          <View className="flex-row gap-3">
+            {/* Create Alert Button */}
+            <TouchableOpacity
+              className="flex-1 rounded-xl py-5 items-center flex-row justify-center"
+              style={{
+                borderWidth: 3,
+                borderColor: '#D50A0A',
+                backgroundColor: 'transparent',
+              }}
+              onPress={() => router.push('/create-alert')}
+              activeOpacity={0.8}
+            >
+              <Image
+                source={require('../../assets/images/warning.png')}
+                style={{ width: 50, height: 50, marginRight: 12 }}
+                resizeMode="contain"
+              />
+              <Text
+                className="text-3xl font-bold"
+                style={{ color: darkMode ? '#FFFFFF' : '#000000' }}
+              >Create Alert</Text>
+            </TouchableOpacity>
+
+            {/* Community Statistics Button */}
+            <TouchableOpacity
+              className="rounded-xl py-5 px-4 items-center justify-center"
+              style={{
+                borderWidth: 3,
+                borderColor: '#57e77a',
+                backgroundColor: 'transparent',
+              }}
+              onPress={() => router.push('/community-stats')}
+              activeOpacity={0.8}
+            >
+              <Image
+                source={require('../../assets/images/people.png')}
+                style={{ width: 50, height: 50 }}
+                resizeMode="contain"
+              />
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
 

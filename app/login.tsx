@@ -20,13 +20,23 @@ export default function LoginScreen() {
     }, []);
 
     const handleLogin = async () => {
+        console.log('Login button pressed');
+        console.log('Username:', username);
+        console.log('Password length:', password.length);
+
         if (!username || !password) {
-            Alert.alert('Error', 'Please fill all fields.');
+            console.log('Missing credentials - showing alert');
+            Alert.alert(
+                'Missing Information',
+                'Please enter both username and password.',
+                [{ text: 'OK', style: 'default' }]
+            );
             return;
         }
 
         try {
             const credentials = btoa(`${username}:${password}`);
+            console.log('Attempting login with credentials');
 
             const response = await fetch('http://10.10.1.69:8080/accounts/', {
                 method: 'GET',
@@ -35,17 +45,59 @@ export default function LoginScreen() {
                 },
             });
 
+            console.log('Response received - Status:', response.status);
+            console.log('Response OK:', response.ok);
+
             if (response.ok) {
-                await login(); // Set auth state
+                console.log('Login successful - navigating to home');
+
+                // Get user data from response
+                const responseText = await response.text();
+                console.log('Raw response:', responseText);
+
+                let userData;
+                try {
+                    userData = JSON.parse(responseText);
+                    console.log('Parsed user data:', userData);
+                    console.log('User data type:', typeof userData);
+                    console.log('User data keys:', Object.keys(userData));
+                } catch (e) {
+                    console.log('Failed to parse response as JSON:', e);
+                    userData = {};
+                }
+
+                // Save user data to AsyncStorage
+                await login(userData); // Set auth state with user data
                 router.replace('/(tabs)/home');
             } else {
-                const text = await response.text();
-                console.error('Login failed:', text);
-                Alert.alert('Login Failed', 'Invalid username or password.');
+                // Login failed - show detailed error
+                console.log('Login failed - Response status:', response.status);
+                console.log('About to show Alert for incorrect credentials');
+
+                Alert.alert(
+                    'Login Failed',
+                    'Incorrect username or password. Please try again.',
+                    [{
+                        text: 'OK',
+                        onPress: () => console.log('Alert dismissed'),
+                    }]
+                );
+                console.log('Alert.alert called');
             }
-        } catch (err) {
-            console.error('Login error:', err);
-            Alert.alert('Login Failed', 'An error occurred. Check console for details.');
+        } catch (err: any) {
+            console.log('Login error caught:', err);
+            console.log('Error name:', err.name);
+            console.log('Error message:', err.message);
+
+            Alert.alert(
+                'Connection Error',
+                'Unable to connect to the server. Please check your internet connection and try again.',
+                [{
+                    text: 'OK',
+                    onPress: () => console.log('Error alert dismissed'),
+                }]
+            );
+            console.log('Error Alert.alert called');
         }
     };
 

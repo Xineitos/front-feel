@@ -14,10 +14,8 @@ export default function SettingsScreen() {
   const [location, setLocation] = useState(true);
 
   const handleLogout = async () => {
-    // Clear authentication state and stored user data
     await logout();
     console.log('Logging out - cleared auth state');
-    // Navigate to index (welcome screen) and clear navigation history
     router.replace('/');
   };
 
@@ -121,10 +119,10 @@ export default function SettingsScreen() {
           </TouchableOpacity>
 
           <TouchableOpacity
-            className="bg-alert rounded-xl p-4 items-center"
+            className="bg-alert rounded-xl p-4 items-center mt-2"
             onPress={handleLogout}
           >
-            <Text className="text-accent font-bold">Log Out</Text>
+            <Text className="text-accent font-bold text-lg">Log Out</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>

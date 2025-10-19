@@ -1,30 +1,31 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, Image } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
 import WaveHeader from '../components/WaveHeader';
 import { useTheme } from '../contexts/ThemeContext';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth, UserData } from '../contexts/AuthContext';
 
 export default function ProfileScreen() {
   const router = useRouter();
   const { darkMode } = useTheme();
-  const { logout } = useAuth();
+  const { getUserData } = useAuth();
+  const [userData, setUserData] = useState<UserData | null>(null);
 
-  const handleLogout = async () => {
-    // Clear authentication state and stored user data
-    await logout();
-    console.log('Logging out - cleared auth state');
+  useEffect(() => {
+    loadUserData();
+  }, []);
 
-    // Navigate to index (welcome screen) and clear navigation history
-    router.replace('/');
+  const loadUserData = async () => {
+    const data = await getUserData();
+    console.log('Loaded user data:', data);
+    setUserData(data);
   };
 
   return (
     <View className={`flex-1 ${darkMode ? 'bg-dark-100' : 'bg-primary'}`}>
       <StatusBar style={darkMode ? "light" : "dark"} />
 
-      {/* Wave Header */}
       <WaveHeader />
 
       {/* Top Header */}
@@ -47,8 +48,14 @@ export default function ProfileScreen() {
           <View className="w-24 h-24 bg-tertiary rounded-full items-center justify-center mb-4">
             <Text className="text-5xl">👤</Text>
           </View>
-          <Text className={`text-2xl font-bold ${darkMode ? 'text-accent' : 'text-dark-100'}`}>John Doe</Text>
-          <Text className={`text-base ${darkMode ? 'text-light-100' : 'text-dark-200'}`}>Community Member</Text>
+          <Text className={`text-2xl font-bold ${darkMode ? 'text-accent' : 'text-dark-100'}`}>
+            {userData?.firstname && userData?.lastname
+              ? `${userData.firstname} ${userData.lastname}`
+              : 'Loading...'}
+          </Text>
+          <Text className={`text-base ${darkMode ? 'text-light-100' : 'text-dark-200'}`}>
+            Community Member
+          </Text>
         </View>
 
         {/* Profile Info */}
@@ -57,31 +64,46 @@ export default function ProfileScreen() {
 
           <View className={`${darkMode ? 'bg-dark-200' : 'bg-accent'} rounded-xl p-4 mb-3`}>
             <Text className={`text-sm ${darkMode ? 'text-light-100' : 'text-dark-200'} mb-1`}>Username</Text>
-            <Text className={`text-base font-semibold ${darkMode ? 'text-accent' : 'text-dark-100'}`}>johndoe123</Text>
+            <Text className={`text-base font-semibold ${darkMode ? 'text-accent' : 'text-dark-100'}`}>
+              {userData?.username || 'N/A'}
+            </Text>
           </View>
 
           <View className={`${darkMode ? 'bg-dark-200' : 'bg-accent'} rounded-xl p-4 mb-3`}>
-            <Text className={`text-sm ${darkMode ? 'text-light-100' : 'text-dark-200'} mb-1`}>Phone</Text>
-            <Text className={`text-base font-semibold ${darkMode ? 'text-accent' : 'text-dark-100'}`}>+1 (876) 123-4567</Text>
+            <Text className={`text-sm ${darkMode ? 'text-light-100' : 'text-dark-200'} mb-1`}>Country</Text>
+            <Text className={`text-base font-semibold ${darkMode ? 'text-accent' : 'text-dark-100'}`}>
+              {userData?.country || 'N/A'}
+            </Text>
           </View>
 
           <View className={`${darkMode ? 'bg-dark-200' : 'bg-accent'} rounded-xl p-4 mb-3`}>
-            <Text className={`text-sm ${darkMode ? 'text-light-100' : 'text-dark-200'} mb-1`}>Location</Text>
-            <Text className={`text-base font-semibold ${darkMode ? 'text-accent' : 'text-dark-100'}`}>Kingston, Jamaica</Text>
+            <Text className={`text-sm ${darkMode ? 'text-light-100' : 'text-dark-200'} mb-1`}>Parish</Text>
+            <Text className={`text-base font-semibold ${darkMode ? 'text-accent' : 'text-dark-100'}`}>
+              {userData?.parish || 'N/A'}
+            </Text>
+          </View>
+
+          <View className={`${darkMode ? 'bg-dark-200' : 'bg-accent'} rounded-xl p-4 mb-3`}>
+            <Text className={`text-sm ${darkMode ? 'text-light-100' : 'text-dark-200'} mb-1`}>City</Text>
+            <Text className={`text-base font-semibold ${darkMode ? 'text-accent' : 'text-dark-100'}`}>
+              {userData?.city || 'N/A'}
+            </Text>
+          </View>
+
+          <View className={`${darkMode ? 'bg-dark-200' : 'bg-accent'} rounded-xl p-4 mb-3`}>
+            <Text className={`text-sm ${darkMode ? 'text-light-100' : 'text-dark-200'} mb-1`}>Community</Text>
+            <Text className={`text-base font-semibold ${darkMode ? 'text-accent' : 'text-dark-100'}`}>
+              {userData?.community || 'N/A'}
+            </Text>
           </View>
         </View>
 
         {/* Edit Button */}
-        <TouchableOpacity className="bg-tertiary rounded-xl py-4 items-center mb-4">
-          <Text className="text-accent text-lg font-bold">Edit Profile</Text>
-        </TouchableOpacity>
-
-        {/* Logout Button */}
         <TouchableOpacity
-          className="bg-alert rounded-xl py-4 items-center mb-6"
-          onPress={handleLogout}
+          className="bg-tertiary rounded-xl py-4 items-center mb-6"
+          onPress={() => router.push('/profile-setup')}
         >
-          <Text className="text-accent font-bold text-lg">Log Out</Text>
+          <Text className="text-accent text-lg font-bold">Edit Profile</Text>
         </TouchableOpacity>
       </ScrollView>
     </View>

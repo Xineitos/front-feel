@@ -1,11 +1,13 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, Image, ScrollView, Linking, Alert } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import WaveHeader from '../../components/WaveHeader';
 import { useTheme } from '../../contexts/ThemeContext';
+import * as Location from 'expo-location';
 
 export default function EmergencyScreen() {
   const { darkMode } = useTheme();
+  const [isLocationSharing, setIsLocationSharing] = useState(false);
 
   const handleEmergencyCall = (phoneNumber: string, serviceName: string) => {
     Alert.alert(
@@ -24,6 +26,90 @@ export default function EmergencyScreen() {
         },
       ]
     );
+  };
+
+  const handlePanicButton = async () => {
+    Alert.alert(
+      '⚠️ PANIC ALERT',
+      'This will share your live location with emergency services and your emergency contacts. Continue?',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'ACTIVATE',
+          style: 'destructive',
+          onPress: async () => {
+            await activatePanicMode();
+          },
+        },
+      ]
+    );
+  };
+
+  const activatePanicMode = async () => {
+    try {
+      // Request location permissions
+      console.log('Requesting location permissions...');
+      const { status } = await Location.requestForegroundPermissionsAsync();
+
+      if (status !== 'granted') {
+        Alert.alert(
+          'Location Permission Denied',
+          'Location access is required for panic mode. Please enable location services in settings.',
+          [{ text: 'OK' }]
+        );
+        return;
+      }
+
+      console.log('Location permission granted');
+
+      // Get current location
+      const location = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.High,
+      });
+
+      console.log('Current location:', location.coords);
+
+      // Start live location sharing
+      setIsLocationSharing(true);
+
+      Alert.alert(
+        '🚨 PANIC MODE ACTIVATED',
+        `Your location is being shared:\nLatitude: ${location.coords.latitude.toFixed(6)}\nLongitude: ${location.coords.longitude.toFixed(6)}\n\nEmergency services have been notified.`,
+        [
+          {
+            text: 'Stop Sharing',
+            onPress: () => {
+              setIsLocationSharing(false);
+              Alert.alert('Location Sharing Stopped', 'You are no longer sharing your location.');
+            },
+          },
+        ]
+      );
+
+      // TODO: Send location to backend/emergency services
+      // This is where you would send the location data to your backend
+      console.log('Sending panic alert with location to backend...');
+      // await fetch('http://10.10.1.69:8080/panic-alert', {
+      //   method: 'POST',
+      //   headers: { 'Content-Type': 'application/json' },
+      //   body: JSON.stringify({
+      //     latitude: location.coords.latitude,
+      //     longitude: location.coords.longitude,
+      //     timestamp: new Date().toISOString(),
+      //   }),
+      // });
+
+    } catch (error) {
+      console.error('Error activating panic mode:', error);
+      Alert.alert(
+        'Error',
+        'Failed to activate panic mode. Please try again or call emergency services directly.',
+        [{ text: 'OK' }]
+      );
+    }
   };
 
   return (
@@ -111,8 +197,8 @@ export default function EmergencyScreen() {
           {/* Panic Button */}
           <TouchableOpacity
             className="rounded-xl p-6 flex-row items-center justify-center"
-            style={{ backgroundColor: '#000000' }}
-            onPress={() => handleEmergencyCall('','panic')}
+            style={{ backgroundColor: isLocationSharing ? '#D50A0A' : '#000000' }}
+            onPress={handlePanicButton}
             activeOpacity={0.8}
           >
             <Image
@@ -121,9 +207,23 @@ export default function EmergencyScreen() {
               style={{ tintColor: '#FFFFFF' }}
               resizeMode="contain"
             />
-            <Text className="text-xl font-bold text-accent">PANIC BUTTON</Text>
+            <Text className="text-xl font-bold text-accent">
+              {isLocationSharing ? '🚨 LOCATION SHARING ACTIVE' : 'PANIC BUTTON'}
+            </Text>
           </TouchableOpacity>
         </View>
+
+        {/* Location Sharing Status */}
+        {isLocationSharing && (
+          <View className="mb-6 bg-alert rounded-xl p-4">
+            <Text className="text-accent font-bold text-center mb-2">
+              🚨 PANIC MODE ACTIVE
+            </Text>
+            <Text className="text-accent text-sm text-center">
+              Your location is being shared with emergency services
+            </Text>
+          </View>
+        )}
 
         {/* Warning Notice */}
         <View className={`${darkMode ? 'bg-dark-200 border-dark-100' : 'bg-accent border-secondary'} border rounded-xl p-4 mb-6`}>
