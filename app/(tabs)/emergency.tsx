@@ -112,7 +112,7 @@ export default function EmergencyScreen() {
           <TouchableOpacity
             className="rounded-xl p-6 flex-row items-center justify-center"
             style={{ backgroundColor: '#000000' }}
-            onPress={() => handleEmergencyCall('panic')}
+            onPress={() => handleEmergencyCall('','panic')}
             activeOpacity={0.8}
           >
             <Image
