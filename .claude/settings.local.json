@@ -3,7 +3,10 @@
     "allow": [
       "Bash(npm install @react-native-async-storage/async-storage)",
       "Bash(npm install react-native-maps)",
-      "Bash(dir \"C:\\Users\\gsecu\\Desktop\\FeelSafeV3\\app\\(tabs)\" /b)"
+      "Bash(dir \"C:\\Users\\gsecu\\Desktop\\FeelSafeV3\\app\\(tabs)\" /b)",
+      "Bash(git pull --rebase origin main)",
+      "Bash(git add .claude/settings.local.json)",
+      "Bash(git commit -m \"Update Claude settings\")"
     ],
     "deny": [],
     "ask": []
