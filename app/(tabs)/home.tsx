@@ -293,67 +293,27 @@ export default function HomeScreen() {
             elevation: 3,
           }}
         >
-          {/* Create Alert Header */}
-          <Text className={`text-lg font-bold ${darkMode ? 'text-accent' : 'text-dark-100'} mb-4 text-center`}>CREATE ALERT</Text>
-
-          {/* Quick Access Buttons */}
-          <View className="flex-row justify-between">
-            <TouchableOpacity
-              className="bg-accent rounded-xl p-3 items-center justify-center"
-              style={{ width: '23%', borderWidth: 2, borderColor: '#57e77a' }}
-              onPress={() => handleQuickAccess('community')}
-              activeOpacity={0.8}
-            >
-              <Image
-                source={require('../../assets/images/people.png')}
-                className="w-10 h-10 mb-1"
-                resizeMode="contain"
-              />
-              <Text className="text-xs font-semibold text-dark-100 text-center">Community</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              className="bg-accent rounded-xl p-3 items-center justify-center"
-              style={{ width: '23%', borderWidth: 2, borderColor: '#005d9e' }}
-              onPress={() => handleQuickAccess('police')}
-              activeOpacity={0.8}
-            >
-              <Image
-                source={require('../../assets/images/police-badge.png')}
-                className="w-10 h-10 mb-1"
-                resizeMode="contain"
-              />
-              <Text className="text-xs font-semibold text-dark-100 text-center">Police</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              className="bg-accent rounded-xl p-3 items-center justify-center"
-              style={{ width: '23%', borderWidth: 2, borderColor: '#ff0000' }}
-              onPress={() => handleQuickAccess('fire')}
-              activeOpacity={0.8}
-            >
-              <Image
-                source={require('../../assets/images/shield.png')}
-                className="w-10 h-10 mb-1"
-                resizeMode="contain"
-              />
-              <Text className="text-xs font-semibold text-dark-100 text-center">Fire Service</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              className="bg-accent rounded-xl p-3 items-center justify-center"
-              style={{ width: '23%', borderWidth: 2, borderColor: '#8d0790' }}
-              onPress={() => handleQuickAccess('ambulance')}
-              activeOpacity={0.8}
-            >
-              <Image
-                source={require('../../assets/images/ambulance.png')}
-                className="w-10 h-10 mb-1"
-                resizeMode="contain"
-              />
-              <Text className="text-xs font-semibold text-dark-100 text-center">Ambulance</Text>
-            </TouchableOpacity>
-          </View>
+          {/* Single Create Alert Button */}
+          <TouchableOpacity
+            className="rounded-xl py-5 items-center flex-row justify-center"
+            style={{
+              borderWidth: 3,
+              borderColor: '#D50A0A',
+              backgroundColor: 'transparent',
+            }}
+            onPress={() => router.push('/create-alert')}
+            activeOpacity={0.8}
+          >
+            <Image
+              source={require('../../assets/images/warning.png')}
+              style={{ width: 50, height: 50, marginRight: 12 }}
+              resizeMode="contain"
+            />
+            <Text
+              className="text-3xl font-bold"
+              style={{ color: darkMode ? '#FFFFFF' : '#000000' }}
+            >Create Alert</Text>
+          </TouchableOpacity>
         </View>
       </View>
 
