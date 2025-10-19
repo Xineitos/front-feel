@@ -1,12 +1,25 @@
-import { View, Text, TouchableOpacity, Image } from "react-native";
+import { View, Text, TouchableOpacity, Image, BackHandler } from "react-native";
 import { Link } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import WaveHeader from "../components/WaveHeader";
+import { useTheme } from "../contexts/ThemeContext";
+import { useEffect } from "react";
 
 export default function Index() {
+  const { darkMode } = useTheme();
+
+  useEffect(() => {
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
+      // Block back navigation - do nothing, just prevent default behavior
+      return true;
+    });
+
+    return () => backHandler.remove();
+  }, []);
+
   return (
-    <View className="flex-1 bg-primary justify-center items-center px-8">
-      <StatusBar style="dark" />
+    <View className={`flex-1 ${darkMode ? 'bg-dark-100' : 'bg-primary'} justify-center items-center px-8`}>
+      <StatusBar style={darkMode ? "light" : "dark"} />
 
       {/* Wave Effect at Top */}
       <WaveHeader />
@@ -17,10 +30,10 @@ export default function Index() {
           <Text className="text-5xl font-bold text-tertiary">Feel</Text>
           <Text className="text-5xl font-bold text-secondary">Safe</Text>
         </View>
-        <Text className="text-xl text-dark-200 text-center">
+        <Text className={`text-xl ${darkMode ? 'text-light-100' : 'text-dark-200'} text-center`}>
           Community Alert Network
         </Text>
-        <Text className="text-base text-dark-200 text-center mt-2">
+        <Text className={`text-base ${darkMode ? 'text-light-100' : 'text-dark-200'} text-center mt-2`}>
           Stay connected. Stay safe.
         </Text>
       </View>
@@ -47,10 +60,13 @@ export default function Index() {
 
         <Link href="/signup" asChild>
           <TouchableOpacity
-            className="bg-accent border-2 border-tertiary rounded-xl py-4 items-center"
+            className={`${darkMode ? 'bg-dark-200' : 'bg-accent'} border-2 border-tertiary rounded-xl py-4 items-center`}
             activeOpacity={0.8}
           >
-            <Text className="text-tertiary text-lg font-bold">Create Account</Text>
+            <Text
+              className="text-lg font-bold"
+              style={{ color: darkMode ? '#FFFFFF' : '#005d9e' }}
+            >Create Account</Text>
           </TouchableOpacity>
         </Link>
       </View>

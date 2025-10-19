@@ -1,29 +1,37 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, ScrollView, Image } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, ScrollView, Image, BackHandler } from 'react-native';
 import { Link, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import WaveHeader from '../components/WaveHeader';
+import { useTheme } from '../contexts/ThemeContext';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function LoginScreen() {
   const router = useRouter();
+  const { darkMode } = useTheme();
+  const { login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
-  const handleLogin = () => {
+  useEffect(() => {
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
+      // Prevent back navigation - return true to block the default behavior
+      return true;
+    });
+
+    return () => backHandler.remove();
+  }, []);
+
+  const handleLogin = async () => {
     // Login logic will be implemented here
     console.log('Login attempt:', { email, password });
 
-    // TODO: Replace with actual authentication logic
-    // For now, simulate first-time login detection
-    const isFirstTimeLogin = true; // This should come from your backend
+    // TODO: Replace with actual authentication logic (API call)
+    // For now, just set authentication state
+    await login();
 
-    if (isFirstTimeLogin) {
-      // Navigate to alert setup for first-time users
-      router.replace('/alert-setup');
-    } else {
-      // Navigate to home for returning users (use replace to prevent back navigation)
-      router.replace('/(tabs)/home');
-    }
+    // Navigate to home screen (use replace to prevent back navigation)
+    router.replace('/(tabs)/home');
   };
 
   return (
@@ -33,9 +41,9 @@ export default function LoginScreen() {
     >
       <ScrollView
         contentContainerClassName="flex-1"
-        className="bg-primary"
+        className={darkMode ? 'bg-dark-100' : 'bg-primary'}
       >
-        <StatusBar style="dark" />
+        <StatusBar style={darkMode ? "light" : "dark"} />
 
         {/* Wave Header */}
         <WaveHeader />
@@ -52,17 +60,17 @@ export default function LoginScreen() {
 
           {/* Header */}
           <View className="mb-12">
-            <Text className="text-4xl font-bold text-dark-100 mb-2">Welcome</Text>
-            <Text className="text-lg text-dark-200">Sign in to stay connected with your community</Text>
+            <Text className={`text-4xl font-bold ${darkMode ? 'text-accent' : 'text-dark-100'} mb-2`}>Welcome</Text>
+            <Text className={`text-lg ${darkMode ? 'text-light-100' : 'text-dark-200'}`}>Sign in to stay connected with your community</Text>
           </View>
 
           {/* Form */}
           <View className="mb-8">
             {/* Email Input */}
             <View className="mb-6">
-              <Text className="text-sm font-medium text-dark-200 mb-2">Email Address</Text>
+              <Text className={`text-sm font-medium ${darkMode ? 'text-light-100' : 'text-dark-200'} mb-2`}>Email Address</Text>
               <TextInput
-                className="bg-accent border border-light-100 rounded-xl px-4 py-4 text-base text-dark-100"
+                className={`${darkMode ? 'bg-dark-200 border-dark-100 text-accent' : 'bg-accent border-light-100 text-dark-100'} border rounded-xl px-4 py-4 text-base`}
                 placeholder="Enter your email"
                 placeholderTextColor="#b1babf"
                 value={email}
@@ -75,9 +83,9 @@ export default function LoginScreen() {
 
             {/* Password Input */}
             <View className="mb-4">
-              <Text className="text-sm font-medium text-dark-200 mb-2">Password</Text>
+              <Text className={`text-sm font-medium ${darkMode ? 'text-light-100' : 'text-dark-200'} mb-2`}>Password</Text>
               <TextInput
-                className="bg-accent border border-light-100 rounded-xl px-4 py-4 text-base text-dark-100"
+                className={`${darkMode ? 'bg-dark-200 border-dark-100 text-accent' : 'bg-accent border-light-100 text-dark-100'} border rounded-xl px-4 py-4 text-base`}
                 placeholder="Enter your password"
                 placeholderTextColor="#b1babf"
                 value={password}
@@ -105,7 +113,7 @@ export default function LoginScreen() {
 
           {/* Sign Up Link */}
           <View className="flex-row justify-center items-center">
-            <Text className="text-dark-200 text-base">Don't have an account? </Text>
+            <Text className={`${darkMode ? 'text-light-100' : 'text-dark-200'} text-base`}>Don't have an account? </Text>
             <Link href="/signup" asChild>
               <TouchableOpacity>
                 <Text className="text-alert font-bold text-base">Sign Up</Text>

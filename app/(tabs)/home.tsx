@@ -4,6 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
 import WaveHeader from '../../components/WaveHeader';
 import { websocketService, AlertMessage } from '../../services/websocket.service';
+import { useTheme } from '../../contexts/ThemeContext';
 
 type AlertFilter = 'active' | 'closed' | 'responded' | 'myAlerts';
 type QuickAccessType = 'community' | 'police' | 'fire' | 'ambulance';
@@ -15,6 +16,7 @@ interface AlertWithDistance extends AlertMessage {
 
 export default function HomeScreen() {
   const router = useRouter();
+  const { darkMode } = useTheme();
   const [menuVisible, setMenuVisible] = useState(false);
   const [alerts, setAlerts] = useState<AlertWithDistance[]>([
     // Mock data for demonstration
@@ -50,7 +52,6 @@ export default function HomeScreen() {
     },
   ]);
   const [activeFilter, setActiveFilter] = useState<AlertFilter>('active');
-  const [sortByDistance, setSortByDistance] = useState(false);
 
   useEffect(() => {
     // WebSocket connection is optional - app works with mock data
@@ -114,11 +115,6 @@ export default function HomeScreen() {
         break;
     }
 
-    // Sort by distance if enabled
-    if (sortByDistance) {
-      filtered = [...filtered].sort((a, b) => (a.distance || 0) - (b.distance || 0));
-    }
-
     return filtered;
   };
 
@@ -142,17 +138,17 @@ export default function HomeScreen() {
 
   const renderAlert = ({ item }: { item: AlertWithDistance }) => (
     <TouchableOpacity
-      className="bg-accent rounded-xl p-4 mb-3 border border-light-100"
+      className={`${darkMode ? 'bg-dark-200' : 'bg-accent'} rounded-xl p-4 mb-3 border ${darkMode ? 'border-dark-100' : 'border-light-100'}`}
       activeOpacity={0.7}
     >
       {/* Alert Header */}
       <View className="flex-row justify-between items-start mb-2">
         <View className="flex-1 mr-3">
-          <Text className="text-lg font-bold text-dark-100 mb-1">
+          <Text className={`text-lg font-bold ${darkMode ? 'text-accent' : 'text-dark-100'} mb-1`}>
             {item.title}
           </Text>
           <View className="flex-row items-center">
-            <Text className="text-xs text-dark-200">
+            <Text className={`text-xs ${darkMode ? 'text-light-100' : 'text-dark-200'}`}>
               By {item.submittedBy} • {getTimeAgo(item.timestamp)}
             </Text>
           </View>
@@ -160,7 +156,7 @@ export default function HomeScreen() {
 
         {/* Distance Badge */}
         {item.distance !== undefined && (
-          <View className="bg-primary px-3 py-1 rounded-full">
+          <View className={`${darkMode ? 'bg-dark-100' : 'bg-primary'} px-3 py-1 rounded-full`}>
             <Text className="text-xs font-semibold text-tertiary">
               {item.distance.toFixed(1)} km
             </Text>
@@ -169,14 +165,14 @@ export default function HomeScreen() {
       </View>
 
       {/* Alert Message */}
-      <Text className="text-sm text-dark-200 mb-3">
+      <Text className={`text-sm ${darkMode ? 'text-light-100' : 'text-dark-200'} mb-3`}>
         {item.message}
       </Text>
 
       {/* Urgency Indicator */}
       <View className="flex-row items-center">
         <View className={`w-2 h-2 rounded-full mr-2 ${getUrgencyColor(item.urgencyLevel)}`} />
-        <Text className="text-xs text-dark-200 capitalize">
+        <Text className={`text-xs ${darkMode ? 'text-light-100' : 'text-dark-200'} capitalize`}>
           {item.urgencyLevel} urgency
         </Text>
       </View>
@@ -184,8 +180,8 @@ export default function HomeScreen() {
   );
 
   return (
-    <View className="flex-1 bg-primary">
-      <StatusBar style="dark" />
+    <View className={`flex-1 ${darkMode ? 'bg-dark-100' : 'bg-primary'}`}>
+      <StatusBar style={darkMode ? "light" : "dark"} />
 
       {/* Wave Header */}
       <WaveHeader />
@@ -194,10 +190,10 @@ export default function HomeScreen() {
       <View className="px-6 pt-16 pb-2 flex-row items-center justify-between" style={{ zIndex: 10 }}>
         {/* Menu Icon */}
         <TouchableOpacity
-          className="w-10 h-10 items-center justify-center"
+          className="w-12 h-12 items-center justify-center"
           onPress={() => setMenuVisible(true)}
         >
-          <Text className="text-2xl text-dark-100">☰</Text>
+          <Text className={`text-4xl ${darkMode ? 'text-accent' : 'text-dark-100'}`}>☰</Text>
         </TouchableOpacity>
 
         {/* Spacer */}
@@ -223,115 +219,141 @@ export default function HomeScreen() {
           activeOpacity={1}
           onPress={() => setMenuVisible(false)}
         >
-          <View className="bg-accent rounded-2xl m-6 mt-24 p-6 shadow-lg">
+          <View className={`${darkMode ? 'bg-dark-100' : 'bg-accent'} rounded-2xl m-6 mt-24 p-6 shadow-lg`}>
             {/* Menu Header */}
-            <View className="mb-6 pb-4 border-b border-light-100">
-              <Text className="text-2xl font-bold text-dark-100">Menu</Text>
+            <View className={`mb-6 pb-4 border-b ${darkMode ? 'border-dark-200' : 'border-light-100'}`}>
+              <Text className={`text-2xl font-bold ${darkMode ? 'text-accent' : 'text-dark-100'}`}>Menu</Text>
             </View>
 
             {/* Profile Option */}
             <TouchableOpacity
-              className="flex-row items-center py-4 px-4 bg-primary rounded-xl mb-3"
+              className={`flex-row items-center py-4 px-4 ${darkMode ? 'bg-dark-200' : 'bg-primary'} rounded-xl mb-3`}
               onPress={() => {
                 setMenuVisible(false);
                 router.push('/profile');
               }}
               activeOpacity={0.7}
             >
-              <Text className="text-2xl mr-4">👤</Text>
+              <Image
+                source={require('../../assets/images/user.png')}
+                className="w-8 h-8 mr-4"
+                resizeMode="contain"
+                style={darkMode ? { tintColor: '#FFFFFF' } : {}}
+              />
               <View className="flex-1">
-                <Text className="text-lg font-semibold text-dark-100">Profile</Text>
-                <Text className="text-sm text-dark-200">View and edit your profile</Text>
+                <Text className={`text-lg font-semibold ${darkMode ? 'text-accent' : 'text-dark-100'}`}>Profile</Text>
+                <Text className={`text-sm ${darkMode ? 'text-light-100' : 'text-dark-200'}`}>View and edit your profile</Text>
               </View>
-              <Text className="text-xl text-dark-200">›</Text>
+              <Text className={`text-xl ${darkMode ? 'text-light-100' : 'text-dark-200'}`}>›</Text>
             </TouchableOpacity>
 
             {/* Settings Option */}
             <TouchableOpacity
-              className="flex-row items-center py-4 px-4 bg-primary rounded-xl mb-3"
+              className={`flex-row items-center py-4 px-4 ${darkMode ? 'bg-dark-200' : 'bg-primary'} rounded-xl mb-3`}
               onPress={() => {
                 setMenuVisible(false);
                 router.push('/settings');
               }}
               activeOpacity={0.7}
             >
-              <Text className="text-2xl mr-4">⚙️</Text>
+              <Image
+                source={require('../../assets/images/cogwheel.png')}
+                className="w-8 h-8 mr-4"
+                resizeMode="contain"
+                style={darkMode ? { tintColor: '#FFFFFF' } : {}}
+              />
               <View className="flex-1">
-                <Text className="text-lg font-semibold text-dark-100">Settings</Text>
-                <Text className="text-sm text-dark-200">Manage app preferences</Text>
+                <Text className={`text-lg font-semibold ${darkMode ? 'text-accent' : 'text-dark-100'}`}>Settings</Text>
+                <Text className={`text-sm ${darkMode ? 'text-light-100' : 'text-dark-200'}`}>Manage app preferences</Text>
               </View>
-              <Text className="text-xl text-dark-200">›</Text>
+              <Text className={`text-xl ${darkMode ? 'text-light-100' : 'text-dark-200'}`}>›</Text>
             </TouchableOpacity>
 
             {/* Close Button */}
             <TouchableOpacity
-              className="mt-4 py-3 rounded-xl border border-light-100"
+              className={`mt-4 py-3 rounded-xl border ${darkMode ? 'border-dark-200' : 'border-light-100'}`}
               onPress={() => setMenuVisible(false)}
             >
-              <Text className="text-center text-dark-200 font-semibold">Close</Text>
+              <Text className={`text-center ${darkMode ? 'text-light-100' : 'text-dark-200'} font-semibold`}>Close</Text>
             </TouchableOpacity>
           </View>
         </TouchableOpacity>
       </Modal>
 
-      {/* Quick Access Buttons */}
+      {/* Quick Access Buttons Container */}
       <View className="px-4 py-4">
-        <View className="flex-row justify-between">
-          <TouchableOpacity
-            className="bg-accent rounded-xl p-3 items-center justify-center"
-            style={{ width: '23%', borderWidth: 2, borderColor: '#57e77a' }}
-            onPress={() => handleQuickAccess('community')}
-            activeOpacity={0.8}
-          >
-            <Image
-              source={require('../../assets/images/people.png')}
-              className="w-10 h-10 mb-1"
-              resizeMode="contain"
-            />
-            <Text className="text-xs font-semibold text-dark-100 text-center">Community</Text>
-          </TouchableOpacity>
+        <View
+          className="rounded-xl p-4"
+          style={{
+            backgroundColor: darkMode ? '#2a2a2a' : '#f6f5f5',
+            shadowColor: darkMode ? '#FFF' : '#000',
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.1,
+            shadowRadius: 4,
+            elevation: 3,
+          }}
+        >
+          {/* Create Alert Header */}
+          <Text className={`text-lg font-bold ${darkMode ? 'text-accent' : 'text-dark-100'} mb-4 text-center`}>CREATE ALERT</Text>
 
-          <TouchableOpacity
-            className="bg-accent rounded-xl p-3 items-center justify-center"
-            style={{ width: '23%', borderWidth: 2, borderColor: '#005d9e' }}
-            onPress={() => handleQuickAccess('police')}
-            activeOpacity={0.8}
-          >
-            <Image
-              source={require('../../assets/images/police-badge.png')}
-              className="w-10 h-10 mb-1"
-              resizeMode="contain"
-            />
-            <Text className="text-xs font-semibold text-dark-100 text-center">Police</Text>
-          </TouchableOpacity>
+          {/* Quick Access Buttons */}
+          <View className="flex-row justify-between">
+            <TouchableOpacity
+              className="bg-accent rounded-xl p-3 items-center justify-center"
+              style={{ width: '23%', borderWidth: 2, borderColor: '#57e77a' }}
+              onPress={() => handleQuickAccess('community')}
+              activeOpacity={0.8}
+            >
+              <Image
+                source={require('../../assets/images/people.png')}
+                className="w-10 h-10 mb-1"
+                resizeMode="contain"
+              />
+              <Text className="text-xs font-semibold text-dark-100 text-center">Community</Text>
+            </TouchableOpacity>
 
-          <TouchableOpacity
-            className="bg-accent rounded-xl p-3 items-center justify-center"
-            style={{ width: '23%', borderWidth: 2, borderColor: '#ff0000' }}
-            onPress={() => handleQuickAccess('fire')}
-            activeOpacity={0.8}
-          >
-            <Image
-              source={require('../../assets/images/shield.png')}
-              className="w-10 h-10 mb-1"
-              resizeMode="contain"
-            />
-            <Text className="text-xs font-semibold text-dark-100 text-center">Fire Service</Text>
-          </TouchableOpacity>
+            <TouchableOpacity
+              className="bg-accent rounded-xl p-3 items-center justify-center"
+              style={{ width: '23%', borderWidth: 2, borderColor: '#005d9e' }}
+              onPress={() => handleQuickAccess('police')}
+              activeOpacity={0.8}
+            >
+              <Image
+                source={require('../../assets/images/police-badge.png')}
+                className="w-10 h-10 mb-1"
+                resizeMode="contain"
+              />
+              <Text className="text-xs font-semibold text-dark-100 text-center">Police</Text>
+            </TouchableOpacity>
 
-          <TouchableOpacity
-            className="bg-accent rounded-xl p-3 items-center justify-center"
-            style={{ width: '23%', borderWidth: 2, borderColor: '#8d0790' }}
-            onPress={() => handleQuickAccess('ambulance')}
-            activeOpacity={0.8}
-          >
-            <Image
-              source={require('../../assets/images/ambulance.png')}
-              className="w-10 h-10 mb-1"
-              resizeMode="contain"
-            />
-            <Text className="text-xs font-semibold text-dark-100 text-center">Ambulance</Text>
-          </TouchableOpacity>
+            <TouchableOpacity
+              className="bg-accent rounded-xl p-3 items-center justify-center"
+              style={{ width: '23%', borderWidth: 2, borderColor: '#ff0000' }}
+              onPress={() => handleQuickAccess('fire')}
+              activeOpacity={0.8}
+            >
+              <Image
+                source={require('../../assets/images/shield.png')}
+                className="w-10 h-10 mb-1"
+                resizeMode="contain"
+              />
+              <Text className="text-xs font-semibold text-dark-100 text-center">Fire Service</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              className="bg-accent rounded-xl p-3 items-center justify-center"
+              style={{ width: '23%', borderWidth: 2, borderColor: '#8d0790' }}
+              onPress={() => handleQuickAccess('ambulance')}
+              activeOpacity={0.8}
+            >
+              <Image
+                source={require('../../assets/images/ambulance.png')}
+                className="w-10 h-10 mb-1"
+                resizeMode="contain"
+              />
+              <Text className="text-xs font-semibold text-dark-100 text-center">Ambulance</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
 
@@ -340,12 +362,12 @@ export default function HomeScreen() {
         <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-3">
           <TouchableOpacity
             className={`px-4 py-2 rounded-full mr-2 ${
-              activeFilter === 'active' ? 'bg-tertiary' : 'bg-accent border border-light-100'
+              activeFilter === 'active' ? 'bg-tertiary' : darkMode ? 'bg-dark-200 border border-dark-100' : 'bg-accent border border-light-100'
             }`}
             onPress={() => setActiveFilter('active')}
           >
             <Text className={`font-semibold ${
-              activeFilter === 'active' ? 'text-accent' : 'text-dark-200'
+              activeFilter === 'active' ? 'text-accent' : darkMode ? 'text-light-100' : 'text-dark-200'
             }`}>
               Active
             </Text>
@@ -353,12 +375,12 @@ export default function HomeScreen() {
 
           <TouchableOpacity
             className={`px-4 py-2 rounded-full mr-2 ${
-              activeFilter === 'closed' ? 'bg-tertiary' : 'bg-accent border border-light-100'
+              activeFilter === 'closed' ? 'bg-tertiary' : darkMode ? 'bg-dark-200 border border-dark-100' : 'bg-accent border border-light-100'
             }`}
             onPress={() => setActiveFilter('closed')}
           >
             <Text className={`font-semibold ${
-              activeFilter === 'closed' ? 'text-accent' : 'text-dark-200'
+              activeFilter === 'closed' ? 'text-accent' : darkMode ? 'text-light-100' : 'text-dark-200'
             }`}>
               Closed
             </Text>
@@ -366,12 +388,12 @@ export default function HomeScreen() {
 
           <TouchableOpacity
             className={`px-4 py-2 rounded-full mr-2 ${
-              activeFilter === 'responded' ? 'bg-tertiary' : 'bg-accent border border-light-100'
+              activeFilter === 'responded' ? 'bg-tertiary' : darkMode ? 'bg-dark-200 border border-dark-100' : 'bg-accent border border-light-100'
             }`}
             onPress={() => setActiveFilter('responded')}
           >
             <Text className={`font-semibold ${
-              activeFilter === 'responded' ? 'text-accent' : 'text-dark-200'
+              activeFilter === 'responded' ? 'text-accent' : darkMode ? 'text-light-100' : 'text-dark-200'
             }`}>
               Responded
             </Text>
@@ -379,30 +401,17 @@ export default function HomeScreen() {
 
           <TouchableOpacity
             className={`px-4 py-2 rounded-full ${
-              activeFilter === 'myAlerts' ? 'bg-tertiary' : 'bg-accent border border-light-100'
+              activeFilter === 'myAlerts' ? 'bg-tertiary' : darkMode ? 'bg-dark-200 border border-dark-100' : 'bg-accent border border-light-100'
             }`}
             onPress={() => setActiveFilter('myAlerts')}
           >
             <Text className={`font-semibold ${
-              activeFilter === 'myAlerts' ? 'text-accent' : 'text-dark-200'
+              activeFilter === 'myAlerts' ? 'text-accent' : darkMode ? 'text-light-100' : 'text-dark-200'
             }`}>
               My Alerts
             </Text>
           </TouchableOpacity>
         </ScrollView>
-
-        {/* Sort by Distance Toggle */}
-        <TouchableOpacity
-          className="flex-row items-center mb-3"
-          onPress={() => setSortByDistance(!sortByDistance)}
-        >
-          <View className={`w-5 h-5 rounded border-2 mr-2 items-center justify-center ${
-            sortByDistance ? 'bg-tertiary border-tertiary' : 'border-light-100'
-          }`}>
-            {sortByDistance && <Text className="text-accent text-xs font-bold">✓</Text>}
-          </View>
-          <Text className="text-sm text-dark-200">Sort by distance</Text>
-        </TouchableOpacity>
       </View>
 
       {/* Alerts List */}
@@ -412,12 +421,12 @@ export default function HomeScreen() {
         keyExtractor={(item) => item.id}
         contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 20 }}
         ListEmptyComponent={
-          <View className="bg-accent border border-light-100 rounded-xl p-8 items-center mt-4">
+          <View className={`${darkMode ? 'bg-dark-200 border-dark-100' : 'bg-accent border-light-100'} border rounded-xl p-8 items-center mt-4`}>
             <Text className="text-4xl mb-3">📭</Text>
-            <Text className="text-lg font-semibold text-dark-100 mb-2">
+            <Text className={`text-lg font-semibold ${darkMode ? 'text-accent' : 'text-dark-100'} mb-2`}>
               No {activeFilter} alerts
             </Text>
-            <Text className="text-sm text-dark-200 text-center">
+            <Text className={`text-sm ${darkMode ? 'text-light-100' : 'text-dark-200'} text-center`}>
               {activeFilter === 'active' && 'All clear in your area'}
               {activeFilter === 'closed' && 'No closed alerts to display'}
               {activeFilter === 'responded' && 'No responded alerts yet'}

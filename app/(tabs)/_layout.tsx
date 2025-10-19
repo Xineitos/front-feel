@@ -1,23 +1,24 @@
 import { Tabs } from 'expo-router';
-import { View, Text } from 'react-native';
-
-
+import { View, Image } from 'react-native';
+import { useTheme } from '../../contexts/ThemeContext';
 
 export default function TabLayout() {
+  const { darkMode } = useTheme();
+
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: '#FFFFFF',
+          backgroundColor: darkMode ? '#1a1a1a' : '#FFFFFF',
           borderTopWidth: 1,
-          borderTopColor: '#b1babf',
+          borderTopColor: darkMode ? '#333333' : '#b1babf',
           height: 100,
           paddingBottom: 12,
           paddingTop: 8,
         },
         tabBarActiveTintColor: '#005d9e',
-        tabBarInactiveTintColor: '#34302B',
+        tabBarInactiveTintColor: darkMode ? '#FFFFFF' : '#34302B',
       }}
     >
       <Tabs.Screen
@@ -33,7 +34,11 @@ export default function TabLayout() {
               alignItems: 'center',
               justifyContent: 'center',
             }}>
-              <Text style={{ fontSize: 24 }}>🏠</Text>
+              <Image
+                source={require('../../assets/images/home.png')}
+                style={{ width: 24, height: 24, tintColor: focused ? '#FFFFFF' : (darkMode ? '#FFFFFF' : '#34302B') }}
+                resizeMode="contain"
+              />
             </View>
           ),
           tabBarLabelStyle: {
@@ -56,7 +61,11 @@ export default function TabLayout() {
               alignItems: 'center',
               justifyContent: 'center',
             }}>
-              <Text style={{ fontSize: 24 }}>🗺️</Text>
+              <Image
+                source={require('../../assets/images/map.png')}
+                style={{ width: 24, height: 24 }}
+                resizeMode="contain"
+              />
             </View>
           ),
           tabBarLabelStyle: {
@@ -80,7 +89,11 @@ export default function TabLayout() {
               justifyContent: 'center',
               marginBottom: 10,
             }}>
-              <Text style={{ fontSize: 22 }}>🚨</Text>
+              <Image
+                source={require('../../assets/images/siren.png')}
+                style={{ width: 20, height: 20 }}
+                resizeMode="contain"
+              />
             </View>
           ),
           tabBarLabelStyle: {
