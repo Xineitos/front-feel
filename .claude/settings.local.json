@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install @react-native-async-storage/async-storage)",
+      "Bash(npm install react-native-maps)",
+      "Bash(dir \"C:\\Users\\gsecu\\Desktop\\FeelSafeV3\\app\\(tabs)\" /b)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
