@@ -6,7 +6,8 @@
       "Bash(dir \"C:\\Users\\gsecu\\Desktop\\FeelSafeV3\\app\\(tabs)\" /b)",
       "Bash(git pull --rebase origin main)",
       "Bash(git add .claude/settings.local.json)",
-      "Bash(git commit -m \"Update Claude settings\")"
+      "Bash(git commit -m \"Update Claude settings\")",
+      "Bash(git push --force origin main)"
     ],
     "deny": [],
     "ask": []

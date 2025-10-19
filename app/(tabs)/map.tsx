@@ -1,17 +1,17 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, Platform, ActivityIndicator, Alert, Image, useColorScheme } from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity, Platform, ActivityIndicator, Alert, Image } from 'react-native';
 import MapView, { Marker, PROVIDER_GOOGLE, MapStyleElement } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import WaveHeader from '../../components/WaveHeader';
+import { useTheme } from '../../contexts/ThemeContext';
 
 export default function MapScreen() {
-  const colorScheme = useColorScheme();
+  const { darkMode } = useTheme();
   const [region, setRegion] = useState(null);
   const [errorMsg, setErrorMsg] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isDarkMode, setIsDarkMode] = useState(colorScheme === 'dark');
   const [permissionDenied, setPermissionDenied] = useState(false);
   const [mapType, setMapType] = useState('standard'); // 'standard' or 'satellite'
   const mapRef = useRef(null);
@@ -252,10 +252,6 @@ export default function MapScreen() {
     }
   };
 
-  const toggleMapStyle = () => {
-    setIsDarkMode(prev => !prev);
-  };
-
   const toggleMapType = () => {
     setMapType(prev => prev === 'standard' ? 'satellite' : 'standard');
   };
@@ -291,12 +287,12 @@ export default function MapScreen() {
       return '#ffffff';  // White markers stand out better on satellite imagery
     }
     // Otherwise use theme-based colors
-    return isDarkMode ? '#4fc3f7' : '#005d9e';
+    return darkMode ? '#4fc3f7' : '#005d9e';
   };
 
   return (
-    <View style={[styles.container, isDarkMode && styles.darkContainer]}>
-      <StatusBar style={isDarkMode ? "light" : "dark"} />
+    <View style={[styles.container, darkMode && styles.darkContainer]}>
+      <StatusBar style={darkMode ? "light" : "dark"} />
 
       {/* Wave Header */}
       <WaveHeader />
@@ -304,25 +300,25 @@ export default function MapScreen() {
       {/* Map container */}
       <View style={styles.mapContainer}>
         {isLoading && !region && (
-          <View style={styles.loadingContainer}>
+          <View style={[styles.loadingContainer, darkMode && styles.darkLoadingContainer]}>
             <ActivityIndicator size="large" color="#005d9e" />
-            <Text style={[styles.loadingText, isDarkMode && styles.darkText]}>
+            <Text style={[styles.loadingText, darkMode && styles.darkText]}>
               Getting your location...
             </Text>
           </View>
         )}
 
         {permissionDenied && (
-          <View style={styles.permissionContainer}>
+          <View style={[styles.permissionContainer, darkMode && styles.darkPermissionContainer]}>
             <Image
               source={require('../../assets/images/FeelSafeLogo.png')}
               style={styles.permissionImage}
               resizeMode="contain"
             />
-            <Text style={[styles.permissionTitle, isDarkMode && styles.darkText]}>
+            <Text style={[styles.permissionTitle, darkMode && styles.darkText]}>
               Location Permission Required
             </Text>
-            <Text style={[styles.permissionText, isDarkMode && styles.darkText]}>
+            <Text style={[styles.permissionText, darkMode && styles.darkText]}>
               FeelSafe needs your location to show nearby alerts and provide accurate safety information.
             </Text>
             <TouchableOpacity
@@ -345,7 +341,7 @@ export default function MapScreen() {
             showsCompass={true}
             showsScale={true}
             mapType={mapType}
-            customMapStyle={mapType === 'standard' ? (isDarkMode ? darkMapStyle : lightMapStyle) : []}
+            customMapStyle={mapType === 'standard' ? (darkMode ? darkMapStyle : lightMapStyle) : []}
           >
             {/* Points of interest markers */}
             {pointsOfInterest.map(point => (
@@ -365,34 +361,24 @@ export default function MapScreen() {
           <View style={styles.controls}>
             {/* Recenter button */}
             <TouchableOpacity
-              style={[styles.controlButton, isDarkMode && styles.darkControlButton]}
+              style={[styles.controlButton, darkMode && styles.darkControlButton]}
               onPress={recenterMap}
             >
-              <Ionicons name="locate" size={24} color={isDarkMode ? "#fff" : "#005d9e"} />
+              <Ionicons name="locate" size={24} color={darkMode ? "#fff" : "#005d9e"} />
             </TouchableOpacity>
 
             {/* Toggle satellite view button */}
             <TouchableOpacity
-              style={[styles.controlButton, isDarkMode && styles.darkControlButton]}
+              style={[styles.controlButton, darkMode && styles.darkControlButton]}
               onPress={toggleMapType}
             >
               <Ionicons
                 name={mapType === 'standard' ? "earth" : "map"}
                 size={24}
-                color={isDarkMode ? "#fff" : "#005d9e"}
+                color={darkMode ? "#fff" : "#005d9e"}
               />
               <View style={mapType === 'satellite' ? styles.activeDot : styles.inactiveDot} />
             </TouchableOpacity>
-
-            {/* Toggle map style button (only for standard view) */}
-            {mapType === 'standard' && (
-              <TouchableOpacity
-                style={[styles.controlButton, isDarkMode && styles.darkControlButton]}
-                onPress={toggleMapStyle}
-              >
-                <Ionicons name={isDarkMode ? "sunny" : "moon"} size={24} color={isDarkMode ? "#fff" : "#005d9e"} />
-              </TouchableOpacity>
-            )}
           </View>
         )}
 
@@ -400,12 +386,12 @@ export default function MapScreen() {
         {region && (
           <View style={[
             styles.mapTypeIndicator,
-            isDarkMode && styles.darkMapTypeIndicator,
+            darkMode && styles.darkMapTypeIndicator,
             mapType === 'satellite' && styles.satelliteMapTypeIndicator
           ]}>
             <Text style={[
               styles.mapTypeText,
-              isDarkMode && styles.darkMapTypeText,
+              darkMode && styles.darkMapTypeText,
               mapType === 'satellite' && styles.satelliteMapTypeText
             ]}>
               {mapType === 'standard' ? 'Standard View' : 'Satellite View'}
@@ -450,6 +436,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#ffffff',
+  },
+  darkLoadingContainer: {
+    backgroundColor: '#121212',
   },
   loadingText: {
     fontSize: 16,
@@ -530,6 +519,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 24,
     backgroundColor: '#ffffff',
+  },
+  darkPermissionContainer: {
+    backgroundColor: '#121212',
   },
   permissionImage: {
     width: 120,
